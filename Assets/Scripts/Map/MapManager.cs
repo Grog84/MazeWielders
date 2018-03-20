@@ -39,7 +39,7 @@ public partial class MapManager : MonoBehaviour {
     {
         mapGenerator.mapManagerTransform = transform;
 
-        mapGenerator.MapSetup();
+        mapGenerator.MapSetup();                                    // Map creation
 
         columns         = mapGenerator.columns;
         rows            = mapGenerator.rows;
@@ -61,7 +61,7 @@ public partial class MapManager : MonoBehaviour {
 
     }
 
-    //Dynamic Creation
+    /* Dynamic Tile creation and destruction */
 
     public Tile InstantiateTileLive(TileTypes tileType, Coordinate coordinate, bool isTrapped = false, bool canBeMoved = true)
     {
@@ -77,9 +77,8 @@ public partial class MapManager : MonoBehaviour {
         myTileComponent.SetPossibleConnections(tileType);
 
         if (isTrapped)
-        {
-            // 0 corresponds to the neutral trap
-            myTileComponent.SetTrap(turnManager.GetActivePlayer() + 1 );
+        {      
+            myTileComponent.SetTrap(turnManager.GetActivePlayer() + 1 );        // 0 corresponds to the neutral trap
             turnManager.AddToActivateTrapList(myTileComponent.GetTrap());
         }
 
@@ -89,7 +88,12 @@ public partial class MapManager : MonoBehaviour {
         return myTileComponent;
     }
 
-    //Terraforming
+    void DestroyTile(GameObject myTile)
+    {
+        Destroy(myTile);
+    }
+
+    /* Terraforming Methods */
 
     Coordinate SlideCoordinate(Coordinate myCoord, SlideDirection slideDir)
     {
@@ -116,11 +120,6 @@ public partial class MapManager : MonoBehaviour {
         return newCoord;
     }
 
-    void DestroyTile(GameObject myTile)
-    {
-        Destroy(myTile);
-    }
-
     public IEnumerator SlideLine(Coordinate[] myCoords)
     {
         Tile tmpTile;
@@ -128,15 +127,15 @@ public partial class MapManager : MonoBehaviour {
 
         float animationTime = 0.5f;
 
-        DestroyTile(PickTileObject(myCoords[myCoords.Length - 1])); // destroys the last movable tile, could become a coroutine
+        DestroyTile(PickTileObject(myCoords[myCoords.Length - 1]));     // Destroys the last movable tile, could become a coroutine
 
         var myMovement = new Vector2(0, 0);
 
         GetComponent<AudioSource>().Play();
         Camera.main.DOShakePosition(0.9f, 1);
 
-        // Slides the line according to the sorting order
-        for (int i = myCoords.Length - 2; i >= 0; i--)
+        
+        for (int i = myCoords.Length - 2; i >= 0; i--)                  // Slides the line according to the sorting order
         {
             tmpTile = PickTileComponent(myCoords[i]);
             tmpTileObj = PickTileObject(myCoords[i]);
@@ -149,8 +148,8 @@ public partial class MapManager : MonoBehaviour {
             myMap[myCoords[i + 1].GetX(), myCoords[i + 1].GetY()] = tmpTileObj;
             myMapTiles[myCoords[i + 1].GetX(), myCoords[i + 1].GetY()] = tmpTile;
 
-            // If a player or diamond is child of the tile updates their coordinates
-            if (tmpTileObj.transform.childCount != 0)
+            
+            if (tmpTileObj.transform.childCount != 0)                   // If a player or diamond is child of the tile updates their coordinates
             {
                 foreach (Transform tr in tmpTileObj.transform)
                 {
@@ -172,7 +171,7 @@ public partial class MapManager : MonoBehaviour {
 
     }
 
-    public IEnumerator RotateTiles(Coordinate[] selectedCoords, RotationDirection rotationDirection) // 1 clockwise, -1 counterclockwise
+    public IEnumerator RotateTiles(Coordinate[] selectedCoords, RotationDirection rotationDirection)
     {
         selectedCoords = KeepMovableTiles(selectedCoords);
 
@@ -206,8 +205,8 @@ public partial class MapManager : MonoBehaviour {
             tmpTileMatrix[i] = tmpTile;
             tmpTileObjMatrix[i] = tmpTileObj;
 
-            // If a player or diamond is child of the tile updates their coordinates
-            if (tmpTileObj.transform.childCount != 0)
+            
+            if (tmpTileObj.transform.childCount != 0)                               // If a player or diamond is child of the tile updates their coordinates
             {
                 foreach (Transform tr in tmpTileObj.transform)
                 {
@@ -235,7 +234,7 @@ public partial class MapManager : MonoBehaviour {
 
     }
 
-    //Tiles managing utilities
+    /* Tiles Management Utilities */
 
     public GameObject PickTileObject(Coordinate myCoord)
     {
@@ -253,7 +252,7 @@ public partial class MapManager : MonoBehaviour {
         }
     }
 
-    public void ResetEffectiveConnections(Coordinate topLeft, Coordinate botRight) // works only in a squared area defined by the 2 coordinates included
+    public void ResetEffectiveConnections(Coordinate topLeft, Coordinate botRight)  // works only in a squared area defined by the 2 coordinates included
     {
         for (int i = topLeft.GetX(); i <= botRight.GetX(); i++)
         {
@@ -264,9 +263,7 @@ public partial class MapManager : MonoBehaviour {
         }
     }
 
-    // Updates the effective tile connection according to the active player
-    // closing the passage occupied by other players and other players bases
-    public void UpdateTilesConnection(int playerPlayingNbr)
+    public void UpdateTilesConnection(int playerPlayingNbr)                         // Updates the effective tile connection relative to the active player
     {
         ResetEffectiveConnections();
 
@@ -278,7 +275,7 @@ public partial class MapManager : MonoBehaviour {
 
                 if (i - 1 >= 0)
                 {
-                    thisTile.CheckConnections(myMapTiles[i - 1, j], 3, playerPlayingNbr);
+                    thisTile.CheckConnections(myMapTiles[i - 1, j], 3, playerPlayingNbr);   // prevents accessing other players spawning areas and occupied tiles
                 }
                 
                 if (j - 1 >= 0)
@@ -301,8 +298,6 @@ public partial class MapManager : MonoBehaviour {
 
     }
 
-    // Updates the connections of the tiles found in the rectangular area
-    // defined by the top left corner coordinates and bottom right corner coordinates
     public void UpdateTilesConnection(Coordinate topLeft, Coordinate botRight)
     {
         ResetEffectiveConnections(topLeft, botRight);
@@ -335,10 +330,9 @@ public partial class MapManager : MonoBehaviour {
 
             }
         }
-    }
+    }   // works only in a squared area defined by the 2 coordinates included
 
-    // Calls the update of the tiles connection for the whole board
-    public void UpdateTilesConnection()
+    public void UpdateTilesConnection()                             // Calls the update of the tiles connection for the whole board
     {
         UpdateTilesConnection(new Coordinate( 0, 0 ), new Coordinate( rows - 1, columns - 1));
 
@@ -349,7 +343,7 @@ public partial class MapManager : MonoBehaviour {
         return myMapTiles[myCoord.GetX(), myCoord.GetY()];
     }
 
-    public Coordinate[] KeepMovableTiles(Coordinate[] myCoords)
+    public Coordinate[] KeepMovableTiles(Coordinate[] myCoords)     // Filters only the movable tiles
     {
         List<Coordinate> movableCoordsList = new List<Coordinate>();
         for (int i = 0; i < myCoords.Length; i++)
@@ -361,7 +355,7 @@ public partial class MapManager : MonoBehaviour {
         return movableCoordsList.ToArray();
     }
 
-    public void UpdateTilesZOrder()
+    public void UpdateTilesZOrder()         // Updates the z order in order to maintain the isometric effect
     {
         for (int i = 0; i < columns; i++)
         {
@@ -372,10 +366,9 @@ public partial class MapManager : MonoBehaviour {
         }
     }
 
-    // Tiles Animation
-
-    // Gets the active player current position as input
-    public void BrightPossibleTiles(Coordinate coordinate, int playerID)
+    /* Tiles Animation */
+  
+    public void BrightPossibleTiles(Coordinate coordinate, int playerID)        // Gets the active player current position and ID
     {
         Tile nextToAdd;
         Tile currentPosition = myMap[coordinate.GetX(), coordinate.GetY()].GetComponent<Tile>();
@@ -426,7 +419,7 @@ public partial class MapManager : MonoBehaviour {
         }
     }
 
-    public void SwitchOffTiles()
+    public void SwitchOffTiles()                                                
     {
         for (int i = 0; i < brightTiles.Count; i++)
         {
@@ -444,7 +437,7 @@ public partial class MapManager : MonoBehaviour {
         return isOtherPlayerCorner;
     }
 
-    // Access Methods
+    /* Controlled Access Methods */
 
     public GameObject[] GetAllInstancedArrows()
     {
@@ -456,7 +449,6 @@ public partial class MapManager : MonoBehaviour {
         return coords.GetVect3() + finalShift;
     }
 
-    // TODO Check the order with respect to the ID
     public Coordinate GetPlayerCornerCoordinates(int playerID)
     {
         return allCornerCoords[playerID];
