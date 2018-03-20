@@ -9,7 +9,7 @@ public class HumanPlayer : Player
     ButtonSelection mDecision = ButtonSelection.NONE;
     DirectionSelection mDirection = DirectionSelection.NONE;
 
-    [HideInInspector] public int isPlayerTurn; // number corresponding to the player playing, serve?
+    [HideInInspector] public int isPlayerTurn;
 
     SpriteRenderer myRenderer;
     Sprite mySprite;
@@ -29,7 +29,7 @@ public class HumanPlayer : Player
 
     GameObject myBarrier;
 
-    // Interface Methods Override
+    /* Interface Methods Override */
 
     public override void SetDescription(PlayerDescription description)
     {
@@ -51,27 +51,28 @@ public class HumanPlayer : Player
         coordinate = newCoordinates;
     }
 
-    public override DirectionSelection InputDirection()
+    public override DirectionSelection InputDirection()         // unloads the input direction and returns it
     {
         DirectionSelection tmpDir = mDirection;
         mDirection = DirectionSelection.NONE;
         return tmpDir;
-    }
+    }       
 
     public override ButtonSelection Decision()
     {
-        ButtonSelection tmpDecision = mDecision;
+        ButtonSelection tmpDecision = mDecision;                // unload the decision and returns it
         mDecision = ButtonSelection.NONE;
         return tmpDecision;
     }
 
     public override IEnumerator Move()
     {
-        // Reset mDecision in case a selection was still active
-        mDecision = ButtonSelection.NONE;
+        
+        mDecision = ButtonSelection.NONE;                       // Reset mDecision in case a selection was still active
 
-        // MIDDLE and RIGHT corresponds to confirm and abort respectively
-        while (mDecision != ButtonSelection.MIDDLE && mDecision != ButtonSelection.RIGHT)
+        
+        while (mDecision != ButtonSelection.MIDDLE &&           // MIDDLE and RIGHT corresponds to confirm and abort respectively
+            mDecision != ButtonSelection.RIGHT)
         {
             DirectionSelection direction = InputDirection();
             if (direction != DirectionSelection.NONE)
@@ -79,13 +80,13 @@ public class HumanPlayer : Player
                 yield return MoveCO(direction);
             }
 
-            if (trapHasTriggered)
+            if (trapHasTriggered)                       // Movement phase interruption
             {
                 trapHasTriggered = false;
                 break;
             }
 
-            if (attackHasHappened)
+            if (attackHasHappened)                      // Movement phase interruption
             {
                 attackHasHappened = false;
                 break;
@@ -96,12 +97,11 @@ public class HumanPlayer : Player
     }
 
     public override IEnumerator SelectTileInsertion(SelectionArrowGroup arrows)
-    {
-        // Reset mDecision in case a selection was still active
-        mDecision = ButtonSelection.NONE;
-
-        // MIDDLE and RIGHT corresponds to confirm and abort respectively
-        while (mDecision != ButtonSelection.MIDDLE && mDecision != ButtonSelection.RIGHT)
+    { 
+        mDecision = ButtonSelection.NONE;                       // Reset mDecision in case a selection was still active
+ 
+        while (mDecision != ButtonSelection.MIDDLE &&           // MIDDLE and RIGHT corresponds to confirm and abort respectively
+            mDecision != ButtonSelection.RIGHT)
         {
             DirectionSelection direction = InputDirection();
 
@@ -114,7 +114,7 @@ public class HumanPlayer : Player
                 arrows.SetAnimatorActive(true);
             }
 
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.1f);              // Waits in order to prevent too sudden movements
         }
 
         yield return null;
@@ -161,8 +161,8 @@ public class HumanPlayer : Player
         Tile tile = mapManager.PickTileComponent(otherPlayer.coordinate);
         StartAnimationAttack();
 
-        // Waits for the animation to reach the attack pose
-        while (attackActivated == 0)
+       
+        while (attackActivated == 0)                                        // Waits for the animation to reach the attack pose. activated by animation trigger
         {
             yield return null;
         }
@@ -170,11 +170,11 @@ public class HumanPlayer : Player
         turnManager.dialogueManager.GetComponent<Speaker>().PlayPvP(playerID, otherPlayer.playerID);
         turnManager.DropDiamond(otherPlayer);
 
-        yield return StartCoroutine(CastBlackHole(tile, otherPlayer));
+        yield return StartCoroutine(CastBlackHole(tile, otherPlayer));      // Waits for blackhole animation
 
         StopAnimaitionAttack();
 
-        while (attackActivated == 1)
+        while (attackActivated == 1)                                        // Waits for the normal animation pose. activated by animation trigger
         {
             yield return null;
         }
@@ -194,11 +194,9 @@ public class HumanPlayer : Player
         CameraMovement myCamera = turnManager.GetCameraComponent();
         myCamera.MoveToHighlight(GeneralMethods.GetVect3Midpoint(transform.position, tile.transform.position));
 
-        // Set animator variable in order to reach the attack position animation
-        StartAnimationAttack();
-
-        // Waits for the animation to reach the attack pose
-        while (attackActivated == 0)
+        StartAnimationAttack();             // Set animator variable in order to reach the attack position animation
+   
+        while (attackActivated == 0)        // Waits for the animation to reach the attack pose. activated by animation trigger
         {
             yield return null;
         }
@@ -206,11 +204,11 @@ public class HumanPlayer : Player
         turnManager.dialogueManager.GetComponent<Speaker>().PlayPvP(playerID, otherPlayer.playerID);
         turnManager.DropDiamond(otherPlayer);
 
-        yield return StartCoroutine(CastBlackHole(tile, otherPlayer));
+        yield return StartCoroutine(CastBlackHole(tile, otherPlayer));      // Waits for the blackhole animation
 
         StopAnimaitionAttack();
 
-        while (attackActivated == 1)
+        while (attackActivated == 1)        // Waits for the normal animation pose. activated by animation trigger
         {
             yield return null;
         }
@@ -224,7 +222,7 @@ public class HumanPlayer : Player
         yield return null;
         StopWalking();
 
-        while (elapsedTime < animTime)
+        while (elapsedTime < animTime)      // Moves to the enemy tile
         {
             transform.position = Vector3.Lerp(transform.position, destination, elapsedTime / animTime);
 
@@ -236,7 +234,7 @@ public class HumanPlayer : Player
 
         Coordinate baseTileCoord = mapManager.GetAllCornerCoordinates()[otherPlayer.playerID];
         Tile baseTile = mapManager.myMapTiles[baseTileCoord.GetX(), baseTileCoord.GetY()];
-        yield return StartCoroutine(turnManager.blackHole.BlackHoleRespawn(baseTile, otherPlayer));
+        yield return StartCoroutine(turnManager.blackHole.BlackHoleRespawn(baseTile, otherPlayer));     // Respawn the defeated player
 
 
         attackHasHappened = true;
@@ -250,22 +248,18 @@ public class HumanPlayer : Player
 
         if (state)
         {
-            // Set it over the player
-            myBarrier.transform.localPosition = new Vector3(0f, 0f, -0.01f);
+            myBarrier.transform.localPosition = new Vector3(0f, 0f, -0.01f);        // Set it over the player
         }
         else
-        {
-            // Waits for the animation to be over
-            yield return new WaitForSeconds(0.5f);
-
-            // Hides the barrier below the field
-            myBarrier.transform.localPosition = new Vector3(0f, 0f, 10f);
+        {     
+            yield return new WaitForSeconds(0.5f);                                  // Waits for the animation to be over          
+            myBarrier.transform.localPosition = new Vector3(0f, 0f, 10f);           // Hides the barrier below the field
         }
 
         yield return null;
     }
 
-    // Movement Coroutine
+    /* Movement Coroutine */
 
     public IEnumerator MoveCO(DirectionSelection direction)
     {
@@ -376,18 +370,18 @@ public class HumanPlayer : Player
                 turnManager.dialogueManager.GetComponent<Speaker>().PlayTrapTrigger(tile.myTrapComponent.GetPlayerDropping());
 
                 myCamera.StopFollowing();
-
-                // Drops it only if the player is the diamond owner
-                turnManager.DropDiamond(this);
+                
+                turnManager.DropDiamond(this);                                                          // Drops the diamond only if the player is the owner
 
                 yield return StartCoroutine(tile.myTrapComponent.Trigger());
-                yield return StartCoroutine(turnManager.blackHole.StartRemoveBlackHole(tile, this));
+                yield return StartCoroutine(turnManager.blackHole.StartRemoveBlackHole(tile, this));    // Waits for the trap blackhole
 
                 turnManager.SetTrapHasTriggered(true);
 
                 Coordinate baseTileCoord = mapManager.GetAllCornerCoordinates()[playerID];
                 Tile baseTile = mapManager.myMapTiles[baseTileCoord.GetX(), baseTileCoord.GetY()];
 
+                // Camera movements
                 yield return new WaitForSeconds(1f);
                 myCamera.StopFollowing();
                 myCamera.MoveToPosition(baseTile.transform.position);
@@ -395,13 +389,13 @@ public class HumanPlayer : Player
 
                 trapHasTriggered = true;
 
-                yield return StartCoroutine(turnManager.blackHole.BlackHoleRespawn(baseTile, this));
+                yield return StartCoroutine(turnManager.blackHole.BlackHoleRespawn(baseTile, this));    // Respawn player
 
             }
-            else if (!trap.GetIsActive() && trap.GetPlayerDropping() == 0)
+            else if (!trap.GetIsActive() && trap.GetPlayerDropping() == 0)                              // Trap is neutral
             {
                 turnManager.dialogueManager.GetComponent<Speaker>().PlayTrapActivated(playerID);
-                trap.SetPlayerDropping(playerID + 1);
+                trap.SetPlayerDropping(playerID + 1);                                                   // Becomes the owner
                 turnManager.AddToActivateTrapList(trap);
                 yield return null;
             }
@@ -428,7 +422,7 @@ public class HumanPlayer : Player
     }
 
 
-    // Animation
+    /* Animation */
 
     public void InvertTransformX()
     {
@@ -464,7 +458,7 @@ public class HumanPlayer : Player
         yield return null;
     }
 
-    // Initial Assignements
+    /* Initial Assignments */
 
     public void SetStartingPoint()
     {
@@ -502,9 +496,9 @@ public class HumanPlayer : Player
 
         return isOtherPlayerCorner;
     }
-    
 
-    // Player position update
+
+    /* Player position update */
 
     public void ResetToStartingPosition()
     {
@@ -523,10 +517,6 @@ public class HumanPlayer : Player
         transform.position = new Vector3(-1000, 0, -5);
     }
 
-    
-    
-
-    // Unity Specific methods
 
     void Awake()
     {
@@ -554,7 +544,7 @@ public class HumanPlayer : Player
 
         if (turnManager.isAcceptingInputs && !turnManager.isInPause)   
         {
-            if (!moving)         
+            if (!moving)         // Reads XY Inputs
             {
                 if (Input.GetKeyDown(KeyCode.D) || Input.GetAxis("HorizontalJoy") == 1 || Input.GetAxis("HorizontalAnalog") >= 0.9f)
                 {
@@ -577,6 +567,8 @@ public class HumanPlayer : Player
                     mDirection = DirectionSelection.NONE;
                 }
             }
+
+            // Reads Button Inputs
 
             if (Input.GetKeyDown(KeyCode.Z) || Input.GetButtonDown("Fire3joy"))
             {
