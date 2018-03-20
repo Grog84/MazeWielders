@@ -180,7 +180,7 @@ public class TurnManager : MonoBehaviour
     // Parallel coroutine listening for a pass turn call
     IEnumerator PassTurnCO()
     {
-        while (canMove || canTerraform || canUseDiamond)
+        while (canMove || canTerraform || canUseDiamond)            // Pass tunr condition - no more moves available
         {
             if ((Input.GetKeyDown(KeyCode.Space) || Input.GetButtonDown("PassTurn")) && isAcceptingInputs)
             {
@@ -194,8 +194,7 @@ public class TurnManager : MonoBehaviour
     // Parallel coroutine listening to a use diamond call
     IEnumerator DiamondCO()
     {
-        // Self interrupts on player switch
-        while (canUseDiamond)
+        while (canUseDiamond)                                           // The condition interrupts the coroutine on character switch
         {
             if ((Input.GetKeyDown(KeyCode.M) || Input.GetButtonDown("Fire4joy")) && isAcceptingInputs)
             {
@@ -295,7 +294,7 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    IEnumerator EndTerraform()
+    IEnumerator EndTerraform()                              // Called after a tile slide or rotation
     {
         mapManager.UpdateTilesConnection(activePlayer.playerID);
 
@@ -303,11 +302,11 @@ public class TurnManager : MonoBehaviour
 
         uiManager.SetTerraformButton(false);
 
-        // Return to base selection level
-        selectionDepth = PanelSelection.BASE;
+        
+        selectionDepth = PanelSelection.BASE;               // Back to base selection level
         StartCoroutine(uiManager.ActivatePanel(PanelSelection.BASE));
 
-        mapManager.UpdateTilesZOrder();
+        mapManager.UpdateTilesZOrder();                     // Assures the correct arrangement of the tiles in the Z axis, maintaining the isometric feeling
 
         yield return null;
     }
@@ -319,34 +318,28 @@ public class TurnManager : MonoBehaviour
         Coordinate[] lineCoordinates = arrow.GetPointedCoords();
         lineCoordinates = mapManager.KeepMovableTiles(lineCoordinates);
 
-        // Checks for PvP actions and resolves it
-        yield return StartCoroutine(CheckPvPLinear(lineCoordinates));
-
-        // Checks for Player on destroyed tile and resolves it
-        Tile lastTile = mapManager.PickTileComponent(lineCoordinates[lineCoordinates.Length - 1]);
-        yield return StartCoroutine(PlayerOutOfBounds(lineCoordinates, lastTile));
-
-        // Checks if the diamond is found on the last tile and would be otherwise destroyed
-        bool bindDiamond = !lastTile.myCoord.IsEqual(diamond.coordinates) && !slideAttack;
+        yield return StartCoroutine(CheckPvPLinear(lineCoordinates));                                   // Checks for PvP actions and resolves it
         
-        // Binds all the players and the diamond to the moving tiles
-        BindAllToTiles(bindDiamond);
-
-        // Slides the Tiles on the selected line
-        yield return StartCoroutine(mapManager.SlideLine(lineCoordinates));
-
-        // Unbinds after the end of the slide
-        UnbindAllFromTiles();
+        Tile lastTile = mapManager.PickTileComponent(lineCoordinates[lineCoordinates.Length - 1]);      // Checks for Player on destroyed tile and resolves it
+        yield return StartCoroutine(PlayerOutOfBounds(lineCoordinates, lastTile));
+        
+        bool bindDiamond = !lastTile.myCoord.IsEqual(diamond.coordinates) && !slideAttack;              // Checks if the diamond is found on the last tile and would be otherwise destroyed
+        
+        BindAllToTiles(bindDiamond);                                                        // Binds all the players and the diamond to the moving tiles
+        
+        yield return StartCoroutine(mapManager.SlideLine(lineCoordinates));                 // Slides the Tiles on the selected line
+        
+        UnbindAllFromTiles();                                                               // Unbinds after the end of the slide
 
         TileTypes tileType = activeCard.GetTileType();
 
         Tile myNewTile;
         if (activeCard.GetTrappedStatus())
-            myNewTile = mapManager.InstantiateTileLive(tileType, lineCoordinates[0], true);  // places a trap on top of the tile
+            myNewTile = mapManager.InstantiateTileLive(tileType, lineCoordinates[0], true); // places a trap on top of the tile
         else
-            myNewTile = mapManager.InstantiateTileLive(tileType, lineCoordinates[0]);  // default is false
+            myNewTile = mapManager.InstantiateTileLive(tileType, lineCoordinates[0]);      
 
-        if (fallingPlayer != null)
+        if (fallingPlayer != null)              // If a falling player is present a PvP action or a player drop off-board has occured
         {
             Coordinate cornerCoords = mapManager.GetAllCornerCoordinates()[fallingPlayer.playerID];
             yield return StartCoroutine(blackHole.BlackHoleRespawn( mapManager.myMapTiles[cornerCoords.GetX(), cornerCoords.GetY()] , fallingPlayer));
@@ -361,7 +354,7 @@ public class TurnManager : MonoBehaviour
 
         activeCard.AssignType(newCardType, trapStatus);
 
-        if (attackingPlayer != null)
+        if (attackingPlayer != null)            // If an attacking player is present a PvP action has occured
         {
             PickUpDiamond(attackingPlayer);
             attackingPlayer = null;
@@ -373,7 +366,6 @@ public class TurnManager : MonoBehaviour
         myCamera.MoveToPosition(activePlayer.GetComponentInParent<Transform>().position);
         yield return StartCoroutine(EndTerraform());
 
-        // Debug.Log(mapManager.diamondCoords.ToString());
         yield return null;
     }
 
@@ -383,13 +375,8 @@ public class TurnManager : MonoBehaviour
 
         arrows.SelectFirst();
         arrows.SetAnimatorActive(true);
-
-        // yield return null;
-
-        //bool firstClick = false;
-        //float firstClickWaitingTime = 0.5f;
         
-        yield return StartCoroutine(activePlayer.SelectTileInsertion(arrows));
+        yield return StartCoroutine(activePlayer.SelectTileInsertion(arrows));      // Active until a back or confirm choices are made
         ButtonSelection decision = activePlayer.Decision();
 
         // BACK
@@ -398,7 +385,7 @@ public class TurnManager : MonoBehaviour
             arrows.SetAnimatorActive(false);
             arrows.SetAllVisible(false);
 
-            myCamera.MoveToPosition(activePlayer.GetComponentInParent<Transform>().position);  // rly?
+            myCamera.MoveToPosition(activePlayer.transform.position);
             StartCoroutine(uiManager.ActivatePanel(PanelSelection.TERRAFORM));
         }
 
@@ -416,26 +403,25 @@ public class TurnManager : MonoBehaviour
 
     IEnumerator CheckPvPLinear(Coordinate[] lineCoordinates)
     {
-        // Checks how many players are found in the group of slided tiles
-        int[] playerIdxInCoords = GetPlayersAtCoordinatesIDX(lineCoordinates);
+        
+        int[] playerIdxInCoords = GetPlayersAtCoordinatesIDX(lineCoordinates);              // Checks how many players are found in the group of slided tiles
 
-        if (playerIdxInCoords.Length > 1) // more than one player is on the slided tiles
+        if (playerIdxInCoords.Length > 1)                                                   // more than one player is on the slided tiles group
         {
             Array.Sort(playerIdxInCoords);
             for (int i = 1; i < playerIdxInCoords.Length; i++)
             {
-                // players are positioned one tile away from each other in the slide direction
-                if (playerIdxInCoords[i] - playerIdxInCoords[i - 1] == 1)
-                {
-                    // checks whether or not the player in the front has the stasis active
-                    Player frontPlayer = GetPlayerAtCoordinates(lineCoordinates[playerIdxInCoords[i]]);
+                
+                if (playerIdxInCoords[i] - playerIdxInCoords[i - 1] == 1)                   // players are positioned one tile away from each other in the slide direction
+                {               
+                    Player frontPlayer = GetPlayerAtCoordinates(lineCoordinates[playerIdxInCoords[i]]); // checks whether or not the player in the front has the stasis active
 
                     if (diamond.stasisActive && frontPlayer.playerID == diamond.diamondOwner)
                     {
                         attackingPlayer = allPlayers[mapManager.PickTileComponent(lineCoordinates[playerIdxInCoords[i - 1]]).occupiedID];
-                        yield return StartCoroutine(attackingPlayer.AttackPlayerOnSlide(frontPlayer));
+                        yield return StartCoroutine(attackingPlayer.AttackPlayerOnSlide(frontPlayer));  // resolves the PvP action
                         StartCoroutine(DeActivateDiamondStasisCO());
-                        fallingPlayer = frontPlayer;
+                        fallingPlayer = frontPlayer;                                        // marks the attacked player as falling
                         slideAttack = true;
                     }
                     
@@ -449,20 +435,21 @@ public class TurnManager : MonoBehaviour
     IEnumerator PlayerOutOfBounds(Coordinate[] lineCoordinates, Tile lastTile)
     {
 
-        if (lastTile.occupiedID != -1)
+        if (lastTile.occupiedID != -1)                  // checks if a player is present on the destroyed tile
         {
             myCamera.MoveToHighlight(lineCoordinates[lineCoordinates.Length - 1].GetPositionFromCoords(mapManager.columns, mapManager.rows));
             yield return null;
 
             int playerIdx = GeneralMethods.FindElementIdx(playerOrder, lastTile.occupiedID);
             fallingPlayer = allPlayers[playerIdx];
+
             if (diamond.diamondOwner == fallingPlayer.playerID)
             {
                 diamond.DropDiamond(fallingPlayer);
                 StartCoroutine(uiManager.SetDiamondAnimation(3));
             }
 
-            yield return StartCoroutine(blackHole.StartRemoveBlackHole(lastTile, fallingPlayer));
+            yield return StartCoroutine(blackHole.StartRemoveBlackHole(lastTile, fallingPlayer));   // removes the player from the tile
 
             StartCoroutine(myCamera.ZoomToCenter());
             yield return new WaitForSeconds(1f);
@@ -479,17 +466,13 @@ public class TurnManager : MonoBehaviour
         Coordinate[] selectedCoords = rotationCursor.GetSelectedCoords();
         rotationCursor.MoveAtPosition(parkingPosition);
 
-        // Possible PvP
-        yield return CheckPvPRotation(selectedCoords, direction);
+        yield return CheckPvPRotation(selectedCoords, direction);           // Possible PvP
 
-        // Binds all the players and the diamond to the moving tiles
-        // true means that the diamond will also be bound to the tiles
-        BindAllToTiles(!slideAttack);
+        BindAllToTiles(!slideAttack);                                       // Binds all the players and the diamond (if true) to the moving tiles
 
         yield return StartCoroutine(mapManager.RotateTiles(selectedCoords, direction));
 
-        // Unbinds after the end of the slide
-        UnbindAllFromTiles();
+        UnbindAllFromTiles();                                               // Unbinds after the the slide end
 
         slideAttack = false;
 
@@ -499,7 +482,7 @@ public class TurnManager : MonoBehaviour
             attackingPlayer = null;
         }
 
-        if (fallingPlayer != null)
+        if (fallingPlayer != null)              // If a falling player is present a PvP action has occured
         {
             Coordinate cornerCoords = mapManager.GetAllCornerCoordinates()[fallingPlayer.playerID];
             yield return StartCoroutine(blackHole.BlackHoleRespawn(mapManager.myMapTiles[cornerCoords.GetX(), cornerCoords.GetY()], fallingPlayer));
@@ -516,21 +499,21 @@ public class TurnManager : MonoBehaviour
         selectionDepth = PanelSelection.ROTATIONCURSOR;
         rotationCursor.CursorActivate(activePlayer.coordinate);
 
-        yield return StartCoroutine(activePlayer.SelectRotation(rotationCursor));
+        yield return StartCoroutine(activePlayer.SelectRotation(rotationCursor));                   // Waits for a Rotation direction choice abort 
         ButtonSelection decision = activePlayer.Decision();
 
-        if (decision == ButtonSelection.RIGHT || Input.GetButtonDown("StartButton"))
+        if (decision == ButtonSelection.RIGHT || Input.GetButtonDown("StartButton"))                // Back to terraform
         {
             rotationCursor.MoveAtPosition(parkingPosition);
             selectionDepth = PanelSelection.TERRAFORM;
             StartCoroutine(uiManager.ActivatePanel(PanelSelection.TERRAFORM));
         }
-        else if (decision == ButtonSelection.LEFT)
+        else if (decision == ButtonSelection.LEFT)                                                  // Clockwise rotation
         {
             canTerraform = false;
             yield return StartCoroutine(ActivateRotation(RotationDirection.CLOCKWISE));
         }
-        else if (decision == ButtonSelection.MIDDLE)
+        else if (decision == ButtonSelection.MIDDLE)                                                // Counterclockwise rotation
         {
             canTerraform = false;
             yield return StartCoroutine(ActivateRotation(RotationDirection.COUNTERCLOCKWISE));
@@ -541,12 +524,10 @@ public class TurnManager : MonoBehaviour
     }
 
     IEnumerator CheckPvPRotation(Coordinate[] selectedCoords, RotationDirection direction)
-    {
-        // Checks for players on the slided tiles
-        int[] playerIdxInCoords = GetPlayersAtCoordinatesIDX(selectedCoords);
+    {       
+        int[] playerIdxInCoords = GetPlayersAtCoordinatesIDX(selectedCoords);                   // Checks for players on the slided tiles
 
-        // More than one player is found on the slided tiles
-        if (playerIdxInCoords.Length > 1) 
+        if (playerIdxInCoords.Length > 1)                                                       // More than one player is found on the slided tiles
         {
             Array.Sort(playerIdxInCoords);
             for (int i = 1; i < playerIdxInCoords.Length; i++)
@@ -557,19 +538,16 @@ public class TurnManager : MonoBehaviour
                     directionDistance = 1;
                     directionDistanceAlt = 3;
                 }
-
-
-                // Players are positioned one tile away from each other in the slide direction
-                if (playerIdxInCoords[i] - playerIdxInCoords[i - 1] == directionDistance ||
+     
+                if (playerIdxInCoords[i] - playerIdxInCoords[i - 1] == directionDistance ||     // Players are positioned one tile away from each other in the slide direction
                     playerIdxInCoords[i] - playerIdxInCoords[i - 1] == directionDistanceAlt) 
-                {
-                    // Checks whether or not the player in the front has the stasis active
-                    Player frontPlayer = GetPlayerAtCoordinates(selectedCoords[playerIdxInCoords[i]]);
-                        
+                {                   
+                    Player frontPlayer = GetPlayerAtCoordinates(selectedCoords[playerIdxInCoords[i]]);      // Checks whether or not the player in the front has the stasis active
+
                     if (diamond.stasisActive && frontPlayer.playerID == diamond.diamondOwner)
                     {
                         attackingPlayer = allPlayers[mapManager.PickTileComponent(selectedCoords[playerIdxInCoords[i - 1]]).occupiedID];
-                        yield return StartCoroutine(attackingPlayer.AttackPlayerOnSlide(frontPlayer));
+                        yield return StartCoroutine(attackingPlayer.AttackPlayerOnSlide(frontPlayer));      // Resolves the PvP action
                         StartCoroutine(DeActivateDiamondStasisCO());
                         fallingPlayer = frontPlayer;
                         slideAttack = true;
@@ -586,48 +564,39 @@ public class TurnManager : MonoBehaviour
     /* Player Movement Coroutines */
 
     IEnumerator ActivateMovementPhase()
-    {
-        // Camera starts following the player
-        myCamera.StartFollowing(activePlayer.transform);
+    {  
+        myCamera.StartFollowing(activePlayer.transform);                                    // Camera starts following the player
+   
+        yield return StartCoroutine(activePlayer.ActivateBarrier(false));                   // Waits for the protective barrier to be removed before moving
 
-        // Waits for the protective barrier to be removed before moving
-        yield return StartCoroutine(activePlayer.ActivateBarrier(false));
-
-        // Stored in case the movement is not confirmed
-        Coordinate movementStartingPosition = activePlayer.coordinate.GetCopy();
-
-        // Calculate the path and bright up the connected tiles
-        mapManager.UpdateTilesConnection(activePlayer.playerID);
+        Coordinate movementStartingPosition = activePlayer.coordinate.GetCopy();            // Stored in case the movement is not confirmed
+  
+        mapManager.UpdateTilesConnection(activePlayer.playerID);                            // Calculate the path and bright up the connected tiles
         mapManager.BrightPossibleTiles(activePlayer.coordinate, activePlayer.playerID);
 
-        // Movement Phase
-        yield return StartCoroutine(activePlayer.Move());
+        
+        yield return StartCoroutine(activePlayer.Move());                                   // Movement Phase
         ButtonSelection decision = activePlayer.Decision();
 
-        // Movement not confirmed
-        if (decision == ButtonSelection.RIGHT)
+       
+        if (decision == ButtonSelection.RIGHT)      // Movement NOT confirmed
         {
-            // Reset the player indication on the tile when the abort choice is performed
-            Tile currentPlayerTile = mapManager.myMapTiles[activePlayer.coordinate.GetX(), activePlayer.coordinate.GetY()];
+            Tile currentPlayerTile = mapManager.myMapTiles[activePlayer.coordinate.GetX(), activePlayer.coordinate.GetY()];     // Reset tile occupation info
             currentPlayerTile.occupiedID = -1;
 
-            // Teleports to the tile where the movement phase beginned
-            Vector3 pos = mapManager.GetVector3FromCoords(movementStartingPosition);
+            Vector3 pos = mapManager.GetVector3FromCoords(movementStartingPosition);        // Teleports back where the movement phase beginned
             pos.z = -1f;
             activePlayer.transform.position = pos;
             activePlayer.coordinate = movementStartingPosition;
 
-            // Set the player indication on the teleported tile
-            currentPlayerTile = mapManager.myMapTiles[activePlayer.coordinate.GetX(), activePlayer.coordinate.GetY()];
+            currentPlayerTile = mapManager.myMapTiles[activePlayer.coordinate.GetX(), activePlayer.coordinate.GetY()];          // Updates tile occupation info
             currentPlayerTile.occupiedID = activePlayer.playerID;
 
             myCamera.MoveToPosition(activePlayer.transform.position);
             ResetActivatedTraps();
         }
 
-        // Movement confirmed or interrupted. Equivalent to:
-        // if (decision == ButtonSelection.MIDDLE || trapHasTriggered || attackHasHappened)
-        else
+        else                                        // Movement CONFIRMED or INTERRUPTED
         {
             if (activePlayer.coordinate.IsEqual(diamond.coordinates) && diamond.diamondOwner != activePlayer.playerID)
             {
@@ -648,6 +617,8 @@ public class TurnManager : MonoBehaviour
             canMove = false;
         }
 
+        // Methods called at the end of a movement phase independently from the input choice
+
         mapManager.SwitchOffTiles();
 
         if (activePlayer.playerID != diamond.diamondOwner)
@@ -655,14 +626,15 @@ public class TurnManager : MonoBehaviour
 
         yield return null;
 
-        // Return to base selection level
-        selectionDepth = PanelSelection.BASE;
+        selectionDepth = PanelSelection.BASE;                               // Back to base selection level
         StartCoroutine(uiManager.ActivatePanel(PanelSelection.BASE));
 
         myCamera.StopFollowing();
 
         yield return null;
     }
+
+    /* Diamond Ownership Methods */
 
     public void PickUpDiamond(Player player)
     {
@@ -684,7 +656,7 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    // Pass Turn
+    /* Pass Turn Methods */
 
     void ActivatePassTurnCondition()
     {
@@ -698,9 +670,8 @@ public class TurnManager : MonoBehaviour
         // Reset abilities usage
         canMove = true;
         canTerraform = true;
-
-        // Change active Player and selects the first during the first turn
-        if (activePlayer != null)
+    
+        if (activePlayer != null)                           // Change active Player and selects the first during the first turn
         {
             activePlayer = allPlayers[(activePlayer.playerID + 1) % 4];
         }
@@ -709,8 +680,8 @@ public class TurnManager : MonoBehaviour
             activePlayer = allPlayers[0];
         }
 
-        // Checks if the player has the diamond
-        if (activePlayer.playerID == diamond.diamondOwner)
+        
+        if (activePlayer.playerID == diamond.diamondOwner)  // Checks if the player has the diamond
         {
             if (diamond.stasisActive)
             {
@@ -718,9 +689,8 @@ public class TurnManager : MonoBehaviour
                 diamond.ResetTurnsBeforeStasis();
             }
             else
-            {
-                // Checks if the dimaond status is active
-                canUseDiamond = diamond.turnsBeforeStasisCounter == 0;
+            {              
+                canUseDiamond = diamond.turnsBeforeStasisCounter == 0;  // Checks if the dimaond status is active
 
                 if (!canUseDiamond)
                 {
@@ -729,26 +699,20 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        // Modifies the pause button
-        uiManager.SetPauseButton(activePlayer.playerID);
+        uiManager.SetPauseButton(activePlayer.playerID);                // Modifies the pause button
+        
+        yield return StartCoroutine(MoveToNextPlayer());                // Camera movement tot the next player
+        
+        mapManager.UpdateTilesConnection(activePlayer.playerID);        // Updates the effective tile connection
 
-        // Camera movement tot the next player
-        yield return StartCoroutine(MoveToNextPlayer());
-
-        // Updates the effective tile connection
-        mapManager.UpdateTilesConnection(activePlayer.playerID);
-
-        // diamond.CheckDiamondStatusTimer(activePlayer.playerID);
-
-        uiManager.SwitchActivePortrait(activePlayer.playerID);
+        uiManager.SwitchActivePortrait(activePlayer.playerID);          // Animates the active player portrait
 
         activeCard = uiManager.GetActiveCards();
 
-        uiManager.ResetButtons(diamond, activePlayer);
+        uiManager.ResetButtons(diamond, activePlayer);                  // Reset the ui button animations
         ActivateTraps();
-
-        // Plays the intro dialogue if it is the player first turn
-        if (isFirstTurn[activePlayer.playerID])
+  
+        if (isFirstTurn[activePlayer.playerID])                         // Plays the intro dialogue if true
         {
             dialogueManager.GetComponent<Speaker>().PlayIntros(activePlayer.playerID);
             isFirstTurn[activePlayer.playerID] = false;
@@ -764,7 +728,7 @@ public class TurnManager : MonoBehaviour
         yield return null;
     }
 
-    // Pause
+    /* Pause Methods */
 
     public void PauseGame()
     {
@@ -778,7 +742,7 @@ public class TurnManager : MonoBehaviour
         isInPause = false;
     }
 
-    // Access methods
+    /* Controlled Access Methods */
 
     public CameraMovement GetCameraComponent()
     {
@@ -796,12 +760,10 @@ public class TurnManager : MonoBehaviour
     }
 
     void ArrangePlayersInTurnOrder()
-    {
-        // set it up to work with random order even though at the moment the playerOrder is predefined
-        GameObject[] tmpPlayers = GetComponentInParent<MapManager>().allPlayers;
+    { 
+        GameObject[] tmpPlayers = GetComponentInParent<MapManager>().allPlayers;        // set it up to work with random order even though at the moment the playerOrder is predefined
         allPlayers = new Player[4];
 
-        //  here we should get also the component defining the plaer movement
         for (int i = 0; i < playerOrder.Length; i++)
         {
             allPlayers[playerOrder[i]] = tmpPlayers[i].GetComponent<Player>();
@@ -865,6 +827,8 @@ public class TurnManager : MonoBehaviour
       
     }
 
+    // Occupation information update
+
     public void UpdateTileOccupiedID(int id, Coordinate coords)
     {
         mapManager.myMapTiles[coords.GetX(), coords.GetY()].occupiedID = id;
@@ -875,12 +839,7 @@ public class TurnManager : MonoBehaviour
         diamond.UpdateDiamondPosition(coords);
     }
 
-    public void SetAttackHasHappened(bool status)
-    {
-        attackHasHappened = status;
-    }
-    
-    // Traps
+    /* Traps related methods */
 
     public void SetTrapHasTriggered(bool status)
     {
@@ -892,7 +851,7 @@ public class TurnManager : MonoBehaviour
         trapsToActivate.Add(trap);
     }
 
-    public void ActivateTraps()
+    public void ActivateTraps()                             // Activates the traps making them invisible and interactive against the other players
     {
         for (int i = trapsToActivate.Count - 1; i >= 0; i--)
         {
@@ -907,12 +866,11 @@ public class TurnManager : MonoBehaviour
             {
                 thisTrap.Activate();
                 trapsToActivate.Remove(thisTrap);
-                //trapsToActivate.RemoveAt(i);
             }
         }
     }
 
-    public void ResetActivatedTraps()
+    public void ResetActivatedTraps()                       // If a movement is cancelled removes the activation of the pre selected traps
     {
         for (int i = trapsToActivate.Count - 1; i >= 0; i--)
         {
@@ -927,7 +885,7 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    // General Methods
+    /* General Methods */
 
     public Player GetPlayerAtCoordinates(Coordinate coord)
     {
@@ -969,23 +927,28 @@ public class TurnManager : MonoBehaviour
         return playersIdxInCoords.ToArray();
     }
 
+    public void SetAttackHasHappened(bool status)
+    {
+        attackHasHappened = status;
+    }
+
     void Update()
     {
-        if (isGameOver && Input.GetButtonDown("Fire1joy"))
+        if (isGameOver && Input.GetButtonDown("Fire1joy"))          // Confirms game over
             SetGameActive(false);
 
-        if ((Input.GetKeyDown(KeyCode.Return) || Input.GetButtonDown("StartButton")) && !isInPause)
+        if ((Input.GetKeyDown(KeyCode.Return) || Input.GetButtonDown("StartButton")) && !isInPause)         // Pause
         {
             uiManager.Pause();
             isInPause = true;
         }
-        else if ((Input.GetKeyDown(KeyCode.Return) || Input.GetButtonDown("StartButton")) && isInPause)
+        else if ((Input.GetKeyDown(KeyCode.Return) || Input.GetButtonDown("StartButton")) && isInPause)     // Un-Pause
         {
             uiManager.Resume();
             isInPause = false;
         }
 
-        // For Debugging
+        // Debugging: restart the scene
         if (isAcceptingInputs && !isInPause)
         { 
             if (Input.GetKeyDown(KeyCode.R)) SceneManager.LoadScene("_Scenes/Game");
