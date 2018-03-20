@@ -10,6 +10,7 @@ public class MapGenerator : ScriptableObject
     public int rows = 0;
     public float tileSize;
 
+    // Tile count parameters
     [Space(10)]
     public Count curvesCount = new Count(4, 8);
     public Count straightCount = new Count(4, 8);
@@ -23,7 +24,7 @@ public class MapGenerator : ScriptableObject
 
     [HideInInspector] public GameObject myDiamondInstance;
 
-    public PlayerDescription[] allPlayersDescription;
+    public PlayerDescription[] allPlayersDescription;           // Info required for the players generation
 
     [HideInInspector] public Transform mapManagerTransform;
 
@@ -43,7 +44,7 @@ public class MapGenerator : ScriptableObject
 
     // Map Generation methods
 
-    // Players Creation
+    /* Players Creation */
 
     public void CreatePlayers()
     {
@@ -60,8 +61,8 @@ public class MapGenerator : ScriptableObject
 
         if (playerNbr == 0)
         {
-            playerInstance.transform.position =  new Vector3(0f, rows - 1, -1f) * tileSize;
-            iplayer.coordinate = new Coordinate(0, rows - 1);
+            playerInstance.transform.position =  new Vector3(0f, rows - 1, -1f) * tileSize;             // position the player in the right corner
+            iplayer.coordinate = new Coordinate(0, rows - 1);                                           // updates coordinate info
         }
         else if (playerNbr == 1)
         {
@@ -85,7 +86,7 @@ public class MapGenerator : ScriptableObject
 
     }
 
-    // Insertion arrows creation
+    /* Insert Arrows Creation */
 
     public void CreateInsertArrows()
     {
@@ -93,7 +94,7 @@ public class MapGenerator : ScriptableObject
         float arrowZOrder = -2f;
         GameObject arrowInstance;
 
-        for (int i = 0; i < columns; i++) // bot arrows
+        for (int i = 0; i < columns; i++)               // BOTTOM arrows
         {
             arrowInstance = Instantiate(insertArrow, new Vector3((i * tileSize), -tileSize, arrowZOrder), Quaternion.identity);
             arrowInstance.transform.Rotate(Vector3.forward * 90);
@@ -102,7 +103,7 @@ public class MapGenerator : ScriptableObject
             allInsertArrows[i] = arrowInstance;
 
         }
-        for (int i = 0; i < rows; i++) // right arrows
+        for (int i = 0; i < rows; i++)                  // RIGHT arrows
         {
             arrowInstance = Instantiate(insertArrow, new Vector3(columns * tileSize, (i * tileSize), arrowZOrder), Quaternion.identity);
             arrowInstance.transform.Rotate(Vector3.forward * 180);
@@ -111,7 +112,7 @@ public class MapGenerator : ScriptableObject
             allInsertArrows[i + columns] = arrowInstance;
 
         }
-        for (int i = 0; i < columns; i++) // top arrows
+        for (int i = 0; i < columns; i++)               // TOP arrows
         {
             arrowInstance = Instantiate(insertArrow, new Vector3((columns - 1) * tileSize - ((i * tileSize)), rows * tileSize, arrowZOrder), Quaternion.identity);
             arrowInstance.transform.Rotate(Vector3.forward * -90);
@@ -120,7 +121,7 @@ public class MapGenerator : ScriptableObject
             allInsertArrows[i + (columns + rows)] = arrowInstance;
 
         }
-        for (int i = 0; i < rows; i++) // left arrows
+        for (int i = 0; i < rows; i++)                  // LEFT arrows
         {
             arrowInstance = Instantiate(insertArrow, new Vector3(-tileSize, (rows - 1) * tileSize - ((i * tileSize)), arrowZOrder), Quaternion.identity);
             arrowInstance.GetComponent<InsertArrow>().SetPointedCoords(0, columns - 1, rows - 1 - i, rows - 1 - i);
@@ -131,32 +132,31 @@ public class MapGenerator : ScriptableObject
 
     }
 
-    // Creation of the tiles forming the board
+    /* Tiles Creation */
 
     int[] GenerateInitialTiles()
     {
-        // Array storing all the information about the number of tiles per type
-        int[] nbrOfTiles;
+        
+        int[] nbrOfTiles;                       // Array storing all the information about the number of tiles per type
 
         nbrOfTiles = new int[4] { 0, 0, 0, 0 }; // 1st index is curves number, 2nd is straights, 3rd is ts, 4th is crosses
-
-        //Defines the number of tiles per type
-        for (int i = 0; i < 4; i++)
+        
+        for (int i = 0; i < 4; i++)     //Defines the number of tiles per type
         {
             if (i == 0)
-                nbrOfTiles[i] = Random.Range(curvesCount.minimum, curvesCount.maximum + 1); // nbr of curve tiles
+                nbrOfTiles[i] = Random.Range(curvesCount.minimum, curvesCount.maximum + 1);         // nbr of curve tiles
             else if (i == 1)
-                nbrOfTiles[i] = Random.Range(straightCount.minimum, straightCount.maximum + 1); // nbr of straight tiles
+                nbrOfTiles[i] = Random.Range(straightCount.minimum, straightCount.maximum + 1);     // nbr of straight tiles
             else if (i == 2)
-                nbrOfTiles[i] = Random.Range(tCount.minimum, tCount.maximum + 1); // nbr of T tiles
+                nbrOfTiles[i] = Random.Range(tCount.minimum, tCount.maximum + 1);                   // nbr of T tiles
             else if (i == 3)
-                nbrOfTiles[i] = Random.Range(crossCount.minimum, crossCount.maximum + 1); // nbr of cross tiles
+                nbrOfTiles[i] = Random.Range(crossCount.minimum, crossCount.maximum + 1);           // nbr of cross tiles
         }
 
         return nbrOfTiles;
     }
 
-    void GenerateSpawningAreas()
+    void GenerateSpawningAreas()        // Creates the 4 corners and the surrounding tiles in order to make sure there is no intial available path 
     {
         int nbrOfSpawningAreas = 4;
         int myTile;
@@ -276,7 +276,7 @@ public class MapGenerator : ScriptableObject
         }
     }
 
-    void GenerateCentralArea()
+    void GenerateCentralArea()          // Creates the central diamond tile and the surrounding tiles as closed area
     {
         int centralX = columns / 2, centralY = rows / 2;
         Coordinate myCoordinate;
@@ -328,7 +328,7 @@ public class MapGenerator : ScriptableObject
 
     }
 
-    private void PlaceNeutralTraps()
+    private void PlaceNeutralTraps()    // Randomly places neutral traps
     {
         int distanceFromBorder = 2;
 
@@ -350,6 +350,8 @@ public class MapGenerator : ScriptableObject
 
     }
 
+    /* Main Creation Method */
+
     public void MapSetup()
     {
         myMap = new GameObject[columns, rows];
@@ -367,35 +369,34 @@ public class MapGenerator : ScriptableObject
 
         nbrOfTiles = GenerateInitialTiles();
 
-        // Check of the number of tiles generated
-        for (int i = 0; i < nbrOfTiles.Length; i++)
+        
+        for (int i = 0; i < nbrOfTiles.Length; i++)             // Check of the number of tiles generated
             generatedTilesNbr += nbrOfTiles[i];
-
-        // Adds or Removes the tiles in order to match the wanted amount
-        if (generatedTilesNbr != randomTilesNbr)
+   
+        if (generatedTilesNbr != randomTilesNbr)                // Adds or Removes the tiles in order to match the wanted amount
         {
             if (generatedTilesNbr > randomTilesNbr)
             {
                 while (generatedTilesNbr != randomTilesNbr)
                 {
-                    int indx = Random.Range(0, 4); // defines the tile type to me removed
+                    int indx = Random.Range(0, 4);              // defines the tile type to me removed
 
-                    if (indx == 0 && nbrOfTiles[indx] > curvesCount.minimum) // removes one curve
+                    if (indx == 0 && nbrOfTiles[indx] > curvesCount.minimum)            // removes one curve
                     {
                         nbrOfTiles[indx]--;
                         generatedTilesNbr--;
                     }
-                    else if (indx == 1 && nbrOfTiles[indx] > straightCount.minimum) // removes one straight
+                    else if (indx == 1 && nbrOfTiles[indx] > straightCount.minimum)     // removes one straight
                     {
                         nbrOfTiles[indx]--;
                         generatedTilesNbr--;
                     }
-                    else if (indx == 2 && nbrOfTiles[indx] > tCount.minimum) // removes one T
+                    else if (indx == 2 && nbrOfTiles[indx] > tCount.minimum)            // removes one T
                     {
                         nbrOfTiles[indx]--;
                         generatedTilesNbr--;
                     }
-                    else if (indx == 3 && nbrOfTiles[indx] > crossCount.minimum) // removes one cross
+                    else if (indx == 3 && nbrOfTiles[indx] > crossCount.minimum)        // removes one cross
                     {
                         nbrOfTiles[indx]--;
                         generatedTilesNbr--;
@@ -435,9 +436,9 @@ public class MapGenerator : ScriptableObject
 
         int tmp = 0, tmpIdx = 0;
 
-        // Creates the tiles inside the array containing them all by index
+        
         tilesArray = new TileTypes[randomTilesNbr];
-        for (int i = 0; i < nbrOfTiles.Length; i++)
+        for (int i = 0; i < nbrOfTiles.Length; i++)                 // Creates the tiles inside the array by index
         {
             for (int j = 0; j < nbrOfTiles[i]; j++)
             {
@@ -455,32 +456,27 @@ public class MapGenerator : ScriptableObject
             }
         }
 
-        // Scramble the tiles inside the array
-        tilesArray = GeneralMethods.ReshuffleArray(tilesArray);
+        tilesArray = GeneralMethods.ReshuffleArray(tilesArray);     // Scramble the tiles inside the array by index
 
-        // Places the tiles
-        tmpIdx = 0;
+     
+        GenerateSpawningAreas();                                    // Generates the 4 corners of the map   
+        GenerateCentralArea();                                      // Generates the central area
 
-        // Generates the 4 corners of the map
-        GenerateSpawningAreas();
-
-        // Generates the central area
-        GenerateCentralArea();
-
-        // Generates all the remaining tiles
-        for (int i = 0; i < columns; i++)
+        
+        tmpIdx = 0;        
+        for (int i = 0; i < columns; i++)                           // Generates the tiles from index
         {
             for (int j = 0; j < rows; j++)
             {
                 bool isSpecial;
 
-                isSpecial = (i <= 1 && j == 0) || // bot-left
+                isSpecial = (i <= 1 && j == 0) ||                       // bot-left
                             (i == 0 && j <= 1) ||
-                            (i <= 1 && j == rows - 1) || // top-left
+                            (i <= 1 && j == rows - 1) ||                // top-left
                             (i == 0 && j >= rows - 2) ||
-                            (i >= columns - 2 && j == rows - 1) || // top-right
+                            (i >= columns - 2 && j == rows - 1) ||      // top-right
                             (i == columns - 1 && j >= rows - 2) ||
-                            (i >= columns - 2 && j == 0) || // bot-right
+                            (i >= columns - 2 && j == 0) ||             // bot-right
                             (i == columns - 1 && j <= 1) ||
 
                             (i >= columns / 2 - 1 && i <= columns / 2 + 1 && j >= rows / 2 - 1 && j <= rows / 2 + 1); // central core 
@@ -496,7 +492,6 @@ public class MapGenerator : ScriptableObject
 
         CreatePlayers();
 
-        //updateTilesConnection();
         CreateInsertArrows();
         PlaceNeutralTraps();
 
@@ -506,13 +501,11 @@ public class MapGenerator : ScriptableObject
             pl.transform.position += finalShift;
         }
 
-        //updateTilesConnection();
-
     }
 
-    //Objects Instance
+    /* Objects Instancing */
 
-    void InstantiateStartingPos(int playerNbr)
+    void InstantiateStartingPos(int playerNbr)      // Instantiate spawning positions
     {
         Coordinate coordinate = null;
 
@@ -570,7 +563,7 @@ public class MapGenerator : ScriptableObject
         myMapTiles[coordinate.GetX(), coordinate.GetY()] = tileInstance.GetComponent<Tile>();
     }
 
-    void InstantiateTile(TileTypes tileType, Coordinate coordinate, bool canBeMoved = true)
+    void InstantiateTile(TileTypes tileType, Coordinate coordinate, bool canBeMoved = true)    // Instantiate a regular tile
     {
         GameObject tileInstance = Instantiate(tile, coordinate.GetVect3WithZ(), Quaternion.identity);
         tileInstance.transform.SetParent(mapManagerTransform);
@@ -587,7 +580,7 @@ public class MapGenerator : ScriptableObject
 
     }
 
-    void InstantiateDiamond(Coordinate coordinate)
+    void InstantiateDiamond(Coordinate coordinate)      // Instantiate the central diamond
     {
         Vector3 diamondPosition = coordinate.GetVect3();
         diamondPosition.z = -10;
@@ -603,12 +596,9 @@ public class MapGenerator : ScriptableObject
 
     }
 
-    
-
-    // Utility Methods
-
-    // Checks wether or not the tile respects the given boundaries
-    bool CheckTileRange(int tileIdx)  
+    /* Utility Methods */
+   
+    bool CheckTileRange(int tileIdx)    // Checks wether or not the tile respects the given boundaries
     {
 
         if (0 <= tileIdx && tileIdx < 4)
