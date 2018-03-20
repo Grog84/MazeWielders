@@ -1,0 +1,109 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Trap : MonoBehaviour {
+
+    private int playerDropping;
+
+    private SpriteRenderer myRenderer;
+    private Sprite mySprite;
+    private Texture2D myTexture;
+    private Coordinate myCoord;
+    public bool isActive;
+    private Animator myAnimator;
+
+    public void SetCoordiantes(Coordinate coord)
+    {
+        myCoord = coord;
+    }
+
+    public Coordinate GetCoordiantes()
+    {
+        return myCoord;
+    }
+
+    void SetInvisible()
+    {
+        myRenderer.color = Color.clear;
+    }
+
+    void SetVisible()
+    {
+        myRenderer.color = Color.white;
+    }
+
+    public void Activate()
+    {
+        isActive = true;
+        transform.parent.gameObject.GetComponent<Tile>().SetIsTrapped(true);
+        SetInvisible();
+    }
+
+    public IEnumerator Trigger()
+    {
+        SetVisible();
+
+        // Triggers the loop animation for 1 second
+        myAnimator.SetBool("hasTriggered", true);
+        yield return new WaitForSeconds(1f);
+        myAnimator.SetBool("hasTriggered", false);
+
+        // Deactivates trap
+        SetPlayerDropping(0);
+        isActive = false;
+
+        yield return null;
+
+    }
+
+    public void SetPlayerDropping(int player)
+    {
+        playerDropping = player;
+        myAnimator.SetInteger("PlayerActivating", player);
+    }
+
+    public int GetPlayerDropping()
+    {
+        return playerDropping;
+    }
+
+    public void SetSprite()
+    {
+        switch (playerDropping)
+        {
+            case 0:
+                myTexture = (Texture2D)Resources.Load("TrapProva/trap");
+                break;
+            case 1:
+                myTexture = (Texture2D)Resources.Load("TrapProva/trap_red");
+                break;
+            case 2:
+                myTexture = (Texture2D)Resources.Load("TrapProva/trap_blue");
+                break;
+            case 3:
+                myTexture = (Texture2D)Resources.Load("TrapProva/trap_green");
+                break;
+            case 4:
+                myTexture = (Texture2D)Resources.Load("TrapProva/trap_yellow");
+                break;
+            default:
+                break;
+        }
+
+        mySprite = Sprite.Create(myTexture, new Rect(0, 0, myTexture.width, myTexture.height), new Vector2(0.5f, 0.5f));
+        myRenderer.sprite = mySprite;
+    }
+
+    public bool GetIsActive()
+    {
+        return isActive;
+    }
+
+	void Awake () {
+        myRenderer = GetComponent<SpriteRenderer>();
+        myAnimator = GetComponent<Animator>();
+    }
+	
+
+}

@@ -1,0 +1,105 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using DG.Tweening;
+
+public class MenuManager : MonoBehaviour
+{
+    public GameObject menuSprite;
+    public GameObject mCamera;
+    private int selezione = 1;
+    private bool moving = false;
+    public FadeManager fading;
+    private float destination;
+    public AudioClip[] SFX;
+    private AudioSource mAudio;
+
+    IEnumerator Selection()
+    {
+        switch (selezione)
+        {
+            case 1:
+                {
+                    StartCoroutine(fading.FadeOut("_Scenes/Connection"));
+                    break;
+                }
+            case 2:
+                {
+                    StartCoroutine(fading.FadeOut("_Scenes/Tutorial"));
+                    break;
+                }
+            case 3:
+                {
+                    Application.Quit();
+                    break;
+                }
+            case 4:
+                {
+                    StartCoroutine(fading.FadeOut("_Scenes/Controls"));
+                    break;
+
+                }
+            default: break;
+
+        }
+        yield return null;
+    }
+
+    void Start()
+    {
+        StartCoroutine(fading.FadeIn());
+        mAudio = GetComponent<AudioSource>();
+    }
+
+    void Update()
+    {
+        if (transform.rotation.eulerAngles.z > (destination - 0.1f) && transform.rotation.eulerAngles.z < (destination + 0.1f) && moving)
+        {
+            Vector3 newPos = transform.rotation.eulerAngles;
+            newPos.z = destination;
+            transform.rotation.eulerAngles.Set(newPos.x, newPos.y, newPos.z);
+            moving = false;
+        }    
+        
+
+        if ((Input.GetKeyDown(KeyCode.W) || Input.GetAxis("VerticalJoy") == 1 || Input.GetAxis("VerticalAnalog") >= 0.9f) && !moving)
+        {
+            moving = true;
+            mAudio.clip = SFX[0];
+            mAudio.Play();
+            destination = (transform.rotation.eulerAngles.z + 90)%360;
+            transform.DOLocalRotate(new Vector3(0, 0, 90), 1, RotateMode.LocalAxisAdd);
+            mCamera.transform.DOShakePosition(0.6F, 0.7f);
+            if (selezione < 4) selezione++;
+            else selezione = 1;
+
+            Debug.Log(selezione);
+            //StartCoroutine(MoveRight());
+        }
+        if ((Input.GetKeyDown(KeyCode.S) || Input.GetAxis("VerticalJoy") == -1 || Input.GetAxis("VerticalAnalog") <= -0.9f) && !moving)
+        {
+            moving = true;
+            mAudio.clip = SFX[0];
+            mAudio.Play();
+            destination = (360+transform.rotation.eulerAngles.z - 90)%360;
+            transform.DOLocalRotate(new Vector3(0, 0, -90), 1, RotateMode.LocalAxisAdd);
+            mCamera.transform.DOShakePosition(0.6F, 0.7f);
+            if (selezione > 1) selezione--;
+            else selezione = 4;
+
+            Debug.Log(selezione);
+            //StartCoroutine(MoveLeft());
+        }
+        if ((Input.GetKeyDown(KeyCode.Space) || Input.GetButtonDown("Fire1joy")) && !moving && !fading.fading)
+        {
+            mAudio.clip = SFX[1];
+            //audio.volume = 0.5f;
+            mAudio.Play();
+            StartCoroutine(Selection());
+        }
+
+        //if (destination > 360) 
+    }
+}
